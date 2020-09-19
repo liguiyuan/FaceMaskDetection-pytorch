@@ -109,7 +109,6 @@ class MobileBottleneck(nn.Module):
         )
 
     def forward(self, x):
-        print('x shape: ', x.shape)
         if self.use_res_connect:
             return x + self.conv(x)
         else:

@@ -19,6 +19,8 @@ from dataloader import MyDataset
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print('device available: {}'.format(device))
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
@@ -30,6 +32,7 @@ def parse_args():
     parser.add_argument('--seed', help='Random seed', type=int, default=1234)
     parser.add_argument('--batch_size',  help='Batch size', type=int, default=128)
     parser.add_argument('--epochs', help='Number of epochs', type=int, default=100)
+    parser.add_argument('--start_epoch', help='start epoch', type=int, default=1)
     parser.add_argument('--input_size', help='Image size', type=int, default=96)
 
     parser.add_argument('--model_name', help='name of the model to save')
@@ -42,11 +45,11 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def main():
+def main(args=None):
     train_transform = transforms.Compose([
         transforms.Resize(96),
         transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomRotation(15),
+        #transforms.RandomRotation(15),
         transforms.ToTensor(),
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     ])
@@ -57,11 +60,13 @@ def main():
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     ])
 
-    dataset_train = MyDataset(txt_path=args.train_txt, transform=train_transform)
-    dataset_val = MyDataset(txt_path=args.val_txt, transform=test_transform)
+    dataset_train = MyDataset(label_path=args.train_txt, transform=train_transform)
+    dataset_val = MyDataset(label_path=args.val_txt, transform=test_transform)
 
     dataloader_train = DataLoader(dataset=dataset_train, batch_size=args.batch_size, shuffle=True)
     dataloader_val = DataLoader(dataset=dataset_val, batch_size=args.batch_size, shuffle=False)
+
+    batch_num = len(dataset_train) // args.batch_size + 1
 
     model = mobilenetv3()
     print('network:')
@@ -71,9 +76,7 @@ def main():
     if not os.path.exists(save_path):
         os.mkdir(save_path)
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     use_cuda = torch.cuda.is_available() and len(args.gpus) > 0
-    print('device available: {}'.format(device))
     if use_cuda:
         torch.cuda.set_device(args.gpus[0])
         torch.cuda.manual_seed(args.seed)
@@ -88,7 +91,7 @@ def main():
     writer = SummaryWriter(log_dir='./summary')
 
     for epoch in range(args.start_epoch, args.epochs+1):
-        train_loss = train(dataloader_train, model, criterion, optimizer, epoch, scheduler)
+        train_loss = train(dataloader_train, model, criterion, optimizer, epoch, scheduler, batch_num)
         test(dataloader_val, model, criterion)
 
         scheduler.step()
@@ -107,7 +110,7 @@ def main():
     writer.close()
 
 
-def train(train_loader, model, criterion, optimizer, epoch, scheduler, batch_numbers):
+def train(train_loader, model, criterion, optimizer, epoch, scheduler, batch_number):
     model.train()
 
     total = 0
@@ -132,10 +135,10 @@ def train(train_loader, model, criterion, optimizer, epoch, scheduler, batch_num
 
         total += labels.size(0)
         correct += (predicted==labels).sum().item()
-        if (i+1)%50 == 0 or (i+1) == batch_numbers:
+        if (i+1)%50 == 0 or (i+1) == batch_number:
             learning_rate = scheduler.get_last_lr()[0]
             print('[epoch: {} | iter: {}/{}] | loss: {:1.5f} | acc: {:1.5f} | lr: {}'.format(
-                epoch, (i+1), batch_numbers, (running_loss/50), (100.0*correct/total), learning_rate))
+                epoch, (i+1), batch_number, (running_loss/50), (100.0*correct/total), learning_rate))
             running_loss = 0.0
             correct = 0
             total = 0
