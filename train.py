@@ -113,9 +113,12 @@ def main(args=None):
 def train(train_loader, model, criterion, optimizer, epoch, scheduler, batch_number):
     model.train()
 
-    total = 0
+    total_samples = 0
+    iter_samples = 0
     correct = 0
     running_loss = 0.0
+    count_loss = 0.0
+
     for i, data in enumerate(train_loader):
         inputs, labels = data
         inputs = Variable(inputs).float().to(device)
@@ -129,19 +132,28 @@ def train(train_loader, model, criterion, optimizer, epoch, scheduler, batch_num
 
         optimizer.step()
 
-        running_loss += loss.item()
         softmax_output = torch.softmax(outputs, dim=-1)
         _, predicted = torch.max(softmax_output.data, 1)
 
-        total += labels.size(0)
+        running_loss += loss.item()
+        count_loss += loss.item()
+
+        iter_samples += labels.size(0)
+        total_samples += labels.size(0)
+
         correct += (predicted==labels).sum().item()
-        if (i+1)%50 == 0 or (i+1) == batch_number:
+
+        if (i+1)%20 == 0 or (i+1) == batch_number:
             learning_rate = scheduler.get_last_lr()[0]
             print('[epoch: {} | iter: {}/{}] | loss: {:1.5f} | acc: {:1.5f} | lr: {}'.format(
-                epoch, (i+1), batch_number, (running_loss/50), (100.0*correct/total), learning_rate))
+                epoch, (i+1), batch_number, (running_loss/20), (100.0*correct/iter_samples), learning_rate))
             running_loss = 0.0
             correct = 0
-            total = 0
+            iter_samples = 0
+
+    mean_loss = np.float(count_loss/total_samples)
+
+    return mean_loss
 
 
 def test(test_loader, model, criterion):
@@ -163,10 +175,8 @@ def test(test_loader, model, criterion):
             softmax_output = torch.softmax(outputs, dim=-1)
             _, predicted = torch.max(softmax_output.data, 1)
 
-            labels2 = labels.to('cpu').detach().numpy()
-            total += len(labels2)
-
-            correct += (predicted==labels2).sum().item()
+            total += len(labels)
+            correct += (predicted==labels).sum().item()
 
     print('test loss:{:1.5f} | test acc:{:1.5f}%'.format((running_loss/total), (100.0*correct/total)))
 
