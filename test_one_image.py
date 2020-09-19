@@ -5,8 +5,33 @@ import torch
 import torch.backends.cudnn as cudnn
 import numpy as np
 import cv2
-from face_detection.face_detection import Face
 import time
+from face_detection.face_detection import Face
+from models.mobilenetv3 import mobilenetv3
+from torchvision import transforms
+from PIL import Image
+
+transform = transforms.Compose([
+    transforms.Resize(96),
+    transforms.ToTensor(),
+    transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+])
+
+def test_inference(model, bgr_image):
+    #img = Image.open(image_path).convert('RGB')
+    img = Image.fromarray(cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB))
+    img = img.resize((96, 96), Image.ANTIALIAS)
+    img = transform(img)
+    img = torch.unsqueeze(img, 0)
+    img = img.cuda().float()
+
+    output = model(img)
+    softmax_output = torch.softmax(output, dim=-1)
+
+    mask_prob = softmax_output[0][1]
+    nomask_porb = softmax_output[0][0]
+    return mask_prob, nomask_porb
+
 
 def main():
     image_path = './images/test.jpeg'
@@ -18,6 +43,14 @@ def main():
     boxes = faceboxes.face_detection(img_raw)
     used_time = time.time() - start_time
     print('used_time: ', used_time)
+
+    # load model
+    checkpoint = torch.load('./checkpoint/mask_detection_1.pth.tar')
+    model = mobilenetv3().cuda()
+    model.load_state_dict(checkpoint['state_dict'])
+    model.eval()
+    model.cuda()
+
     vis_thres = 0.9
     # show image
     for b in boxes:
@@ -54,10 +87,18 @@ def main():
         #cv2.imshow('cropped', cropped)
         #cv2.waitKey(0)
 
-        text = "{:.4f}".format(score)
-        cv2.rectangle(img_raw, (x1, y1), (x2, y2), (0, 0, 255), 2)
+        mask_prob, nomask_porb = test_inference(model, cropped)
+        
+        if mask_prob >= 0.5:
+            show_text = "mask {:.2f}".format(mask_prob)
+            rectangle_color = (0, 255, 0)
+        else:
+            show_text = "unmask {:.2f}".format(mask_prob)
+            rectangle_color = (0, 0, 255)
 
-        cv2.putText(img_raw, text, (x1, y1 - 10),
+        cv2.rectangle(img_raw, (x1, y1), (x2, y2), rectangle_color, 2)
+
+        cv2.putText(img_raw, show_text, (x1, y1 - 10),
                     cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
     cv2.imshow('res', img_raw)
     cv2.waitKey(0)
