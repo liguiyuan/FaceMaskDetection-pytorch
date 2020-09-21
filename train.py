@@ -66,7 +66,7 @@ def main(args=None):
     dataloader_train = DataLoader(dataset=dataset_train, batch_size=args.batch_size, shuffle=True)
     dataloader_val = DataLoader(dataset=dataset_val, batch_size=args.batch_size, shuffle=False)
 
-    batch_num = len(dataset_train) // args.batch_size + 1
+    batch_num = len(dataset_train) // args.batch_size
 
     model = mobilenetv3()
     print('network:')
@@ -97,16 +97,19 @@ def main(args=None):
         scheduler.step()
 
         model_name = 'mask_detection'
+        """
         save_name = '{}/{}_{}.pth.tar'.format(save_path, model_name, epoch)
         save_checkpoint({
             'epoch': epoch,
             'state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict()
         }, filename=save_name)
-
+        """
+        save_name = '{}/{}_{}.pth'.format(save_path, model_name, epoch)
+        torch.save(model, save_name)
         writer.add_scalars('scalar/loss', {'train_loss': train_loss}, epoch)
 
-    writer.exoprt_scalars_to_json('./summary/' + 'pretrain' + 'all_scalars.json')
+    writer.export_scalars_to_json('./summary/' + 'pretrain' + 'all_scalars.json')
     writer.close()
 
 
@@ -161,7 +164,7 @@ def test(test_loader, model, criterion):
 
     total = 0
     correct = 0
-    running_loss = 0.0
+    running_loss = []
     with torch.no_grad():
         for i, data in enumerate(test_loader):
             inputs, labels= data
@@ -170,7 +173,7 @@ def test(test_loader, model, criterion):
 
             outputs = model(inputs)
             loss = criterion(outputs, labels)
-            running_loss += loss.item()
+            running_loss.append(float(loss))
 
             softmax_output = torch.softmax(outputs, dim=-1)
             _, predicted = torch.max(softmax_output.data, 1)
@@ -178,7 +181,8 @@ def test(test_loader, model, criterion):
             total += len(labels)
             correct += (predicted==labels).sum().item()
 
-    print('test loss:{:1.5f} | test acc:{:1.5f}%'.format((running_loss/total), (100.0*correct/total)))
+    test_loss = np.mean(running_loss)
+    print('test loss:{:1.5f} | test acc:{:1.5f}%'.format(test_loss, (100.0*correct/total)))
 
 def save_checkpoint(state, filename='checkpoint.pth.tar'):
     print('save model: {}\n'.format(filename))
