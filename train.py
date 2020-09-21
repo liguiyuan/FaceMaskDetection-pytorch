@@ -92,22 +92,20 @@ def main(args=None):
 
     for epoch in range(args.start_epoch, args.epochs+1):
         train_loss = train(dataloader_train, model, criterion, optimizer, epoch, scheduler, batch_num)
-        test(dataloader_val, model, criterion)
+        test_loss = test(dataloader_val, model, criterion)
 
         scheduler.step()
 
         model_name = 'mask_detection'
-        """
+        
         save_name = '{}/{}_{}.pth.tar'.format(save_path, model_name, epoch)
         save_checkpoint({
             'epoch': epoch,
             'state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict()
         }, filename=save_name)
-        """
-        save_name = '{}/{}_{}.pth'.format(save_path, model_name, epoch)
-        torch.save(model, save_name)
-        writer.add_scalars('scalar/loss', {'train_loss': train_loss}, epoch)
+        
+        writer.add_scalars('scalar/loss', {'train_loss': train_loss, 'test_loss': test_loss}, epoch)
 
     writer.export_scalars_to_json('./summary/' + 'pretrain' + 'all_scalars.json')
     writer.close()
@@ -116,11 +114,10 @@ def main(args=None):
 def train(train_loader, model, criterion, optimizer, epoch, scheduler, batch_number):
     model.train()
 
-    total_samples = 0
     iter_samples = 0
     correct = 0
     running_loss = 0.0
-    count_loss = 0.0
+    count_loss = []
 
     for i, data in enumerate(train_loader):
         inputs, labels = data
@@ -139,10 +136,9 @@ def train(train_loader, model, criterion, optimizer, epoch, scheduler, batch_num
         _, predicted = torch.max(softmax_output.data, 1)
 
         running_loss += loss.item()
-        count_loss += loss.item()
+        count_loss.append(float(loss))
 
         iter_samples += labels.size(0)
-        total_samples += labels.size(0)
 
         correct += (predicted==labels).sum().item()
 
@@ -154,8 +150,7 @@ def train(train_loader, model, criterion, optimizer, epoch, scheduler, batch_num
             correct = 0
             iter_samples = 0
 
-    mean_loss = np.float(count_loss/total_samples)
-
+    mean_loss = np.mean(count_loss)
     return mean_loss
 
 
@@ -183,6 +178,7 @@ def test(test_loader, model, criterion):
 
     test_loss = np.mean(running_loss)
     print('test loss:{:1.5f} | test acc:{:1.5f}%'.format(test_loss, (100.0*correct/total)))
+    return test_loss
 
 def save_checkpoint(state, filename='checkpoint.pth.tar'):
     print('save model: {}\n'.format(filename))

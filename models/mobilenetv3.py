@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from thop import profile
+import numpy as np
 
 __all__ = ['MobileNetV3', 'mobilenetv3']
 
@@ -68,7 +69,6 @@ class Identity(nn.Module):
 
 
 def make_divisible(x, divisible_by=8):
-    import numpy as np
     return int(np.ceil(x * 1. / divisible_by) * divisible_by)
 
 
@@ -116,7 +116,7 @@ class MobileBottleneck(nn.Module):
 
 
 class MobileNetV3(nn.Module):
-    def __init__(self, n_class=1000, input_size=224, dropout=0.8, mode='small', width_mult=1.0):
+    def __init__(self, n_class=2, input_size=96, dropout=0.8, mode='small', width_mult=1.0):
         super(MobileNetV3, self).__init__()
         input_channel = 16
         last_channel = 10 #1280
