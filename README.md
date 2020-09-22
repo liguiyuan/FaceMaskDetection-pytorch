@@ -11,7 +11,7 @@ RMFD dataset url: https://github.com/X-zhangyang/Real-World-Masked-Face-Dataset
 
 
 
-### 2.training
+## 2.training
 
 Running script:
 
@@ -26,11 +26,15 @@ results:
 |                   | Parameters | Accuracy |
 | ----------------- | ---------- | -------- |
 | MobileNetv3 large | 12M        | 99.0%    |
-| MobileNetv3 small | 3.7M       | 98.6%    |
+| MobileNetv3 small | 3.8M       | 98.6%    |
+
+images show:
+
+![https://github.com/liguiyuan/FaceMaskDetection-pytorch/tree/master/images/test.jpg]()
 
 
 
-### 3.Deploy
+## 3.Deploy
 
 We use `ncnn` to deploy it on Android devices.
 
