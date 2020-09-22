@@ -30,7 +30,7 @@ results:
 
 images show:
 
-![https://github.com/liguiyuan/FaceMaskDetection-pytorch/tree/master/images/test.jpg]()
+![](https://github.com/liguiyuan/FaceMaskDetection-pytorch/tree/master/images/test_result.jpg)
 
 
 
