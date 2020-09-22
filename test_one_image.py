@@ -34,19 +34,21 @@ def test_inference(model, bgr_image):
 
 
 def main():
-    image_path = './images/test.jpeg'
-    img_raw = cv2.imread(image_path, cv2.IMREAD_COLOR)
-    im_height, im_width, _ = img_raw.shape
-    
-    faceboxes = Face()
-    boxes = faceboxes.face_detection(img_raw)
-
     # load model
+    faceboxes = Face()
+    
     checkpoint = torch.load('./checkpoint/mask_detection.pth.tar')
     model = mobilenetv3().cuda()
     model.load_state_dict(checkpoint['state_dict'])
     model.eval()
     model.cuda()
+
+    image_path = './images/test.jpg'
+    img_raw = cv2.imread(image_path, cv2.IMREAD_COLOR)
+    im_height, im_width, _ = img_raw.shape
+
+    start_time = time.time()
+    boxes = faceboxes.face_detection(img_raw)
 
     vis_thres = 0.9
     # show image
@@ -83,10 +85,7 @@ def main():
         cropped = cv2.resize(cropped, (96, 96))
 
         # mask model inference
-        start_time = time.time()
         mask_prob, nomask_porb = test_inference(model, cropped)
-        used_time = time.time() - start_time
-        print('used_time: ', used_time)
         
         if mask_prob >= 0.5:
             show_text = "mask {:.2f}".format(mask_prob)
@@ -97,8 +96,12 @@ def main():
 
         cv2.rectangle(img_raw, (x1, y1), (x2, y2), rectangle_color, 2)
 
-        cv2.putText(img_raw, show_text, (x1, y1 - 10),
+        cv2.putText(img_raw, show_text, (x1, y1 - 5),
                     cv2.FONT_HERSHEY_DUPLEX, 0.5, rectangle_color)
+
+    used_time = time.time() - start_time
+    print('used_time: ', used_time)
+
     cv2.imshow('res', img_raw)
     cv2.waitKey(0)
 
