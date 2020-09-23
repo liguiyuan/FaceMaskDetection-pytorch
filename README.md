@@ -21,14 +21,20 @@ sh train.sh
 
 
 
-results:
+Model is efficient and high-accuracy, with real-time speed on the CPU devices.
 
 |                   | Parameters | Accuracy |
 | ----------------- | ---------- | -------- |
 | MobileNetv3 large | 12M        | 99.0%    |
 | MobileNetv3 small | 3.8M       | 98.6%    |
 
-images show:
+model download:
+
+链接： https://pan.baidu.com/s/1fP9q4nELXm6dQQirbPy6cA 提取码：kjkx
+
+
+
+examples:
 
 ![image](https://github.com/liguiyuan/FaceMaskDetection-pytorch/blob/master/images/test_result.jpg)
 
@@ -57,4 +63,12 @@ convert onnx to ncnn:
 ```
 
 
+
+## 4.References
+
+https://github.com/zisianw/FaceBoxes.PyTorch
+
+https://github.com/kuan-wang/pytorch-mobilenet-v3
+
+https://github.com/X-zhangyang/Real-World-Masked-Face-Dataset
 

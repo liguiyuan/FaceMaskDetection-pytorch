@@ -223,7 +223,7 @@ class MobileNetV3(nn.Module):
 
 
 def mobilenetv3():
-    model = MobileNetV3(n_class=2, input_size=96, mode='large', width_mult=1.0)
+    model = MobileNetV3(n_class=2, input_size=96, mode='small', width_mult=1.0)
     return model
 
 """
